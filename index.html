@@ -323,7 +323,39 @@ select:focus{outline:none;border-color:#4a80b8}
 
 <div id="toast" class="toast"></div>
 
-<script>
+<script type="module">
+// --- FIREBASE ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAe2m1dB0_vn2dIieSjHt2C4jd_A8K1q98",
+  authDomain: "baseball-scorecard-653b0.firebaseapp.com",
+  projectId: "baseball-scorecard-653b0",
+  storageBucket: "baseball-scorecard-653b0.firebasestorage.app",
+  messagingSenderId: "494621326414",
+  appId: "1:494621326414:web:4eddb45e7eb6ae49ed571f",
+  measurementId: "G-8HYLSGFVN3"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+async function fbSaveGame(id, data){
+  await setDoc(doc(db,'games',id), data);
+}
+async function fbLoadGame(id){
+  const snap = await getDoc(doc(db,'games',id));
+  return snap.exists() ? snap.data() : null;
+}
+async function fbDeleteGame(id){
+  await deleteDoc(doc(db,'games',id));
+}
+async function fbListGames(){
+  const q = query(collection(db,'games'), orderBy('savedAt','desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
 const OUTCOMES=['1B','2B','3B','HR','K','Kc','BB','IBB','HBP','E','FC','SAC','GIDP','FO','GO','LO','F8','F9','IF'];
 const FIELDERS=['1','2','3','4','5','6','7','8','9'];
 const BASES=['1st','2nd','3rd','Home'];
@@ -777,24 +809,21 @@ async function saveGame(){
   const id=state.currentGameId||(Date.now().toString(36)+Math.random().toString(36).slice(2));
   state.currentGameId=id;
   try{
-    await window.storage.set('game:'+id,JSON.stringify({...state,savedAt:Date.now(),name}));
-    let idx=[];
-    try{const ir=await window.storage.get('games-index');if(ir)idx=JSON.parse(ir.value);}catch(e){}
-    if(!idx.find(g=>g.id===id))idx.unshift({id,name,savedAt:Date.now()});
-    else{const g=idx.find(g=>g.id===id);g.name=name;g.savedAt=Date.now();}
-    await window.storage.set('games-index',JSON.stringify(idx));
+    const payload={...state,savedAt:Date.now(),name};
+    // strip undefined values for Firestore
+    const clean=JSON.parse(JSON.stringify(payload));
+    await fbSaveGame(id, clean);
     closeSaveModal();toast('Game saved!');
     document.getElementById('game-status').textContent=name;
-  }catch(e){document.getElementById('save-status').textContent='Save failed — try again';}
+  }catch(e){console.error(e);document.getElementById('save-status').textContent='Save failed — try again';}
 }
 async function loadGamesList(){
   const el=document.getElementById('games-list');
   el.innerHTML='<div class="loading">Loading...</div>';
   try{
-    let idx=[];
-    try{const ir=await window.storage.get('games-index');if(ir)idx=JSON.parse(ir.value);}catch(e){}
-    if(!idx.length){el.innerHTML='<div class="loading">No saved games yet.</div>';return;}
-    el.innerHTML=idx.map(g=>`
+    const games=await fbListGames();
+    if(!games.length){el.innerHTML='<div class="loading">No saved games yet.</div>';return;}
+    el.innerHTML=games.map(g=>`
       <div class="game-card">
         <div><div class="game-title">${g.name}</div><div class="game-meta">${new Date(g.savedAt).toLocaleString()}</div></div>
         <div style="display:flex;gap:6px">
@@ -802,13 +831,12 @@ async function loadGamesList(){
           <button class="btn btn-sm btn-red" onclick="deleteGame('${g.id}')">Delete</button>
         </div>
       </div>`).join('');
-  }catch(e){el.innerHTML='<div class="loading">Could not load games.</div>';}
+  }catch(e){console.error(e);el.innerHTML='<div class="loading">Could not load games.</div>';}
 }
 async function loadGame(id){
   try{
-    const r=await window.storage.get('game:'+id);
-    if(!r)throw new Error();
-    const saved=JSON.parse(r.value);
+    const saved=await fbLoadGame(id);
+    if(!saved)throw new Error();
     state={...saved};
     document.getElementById('away-name').value=state.teams.away.name;
     document.getElementById('home-name').value=state.teams.home.name;
@@ -826,10 +854,7 @@ async function loadGame(id){
 async function deleteGame(id){
   if(!confirm('Delete this saved game?'))return;
   try{
-    await window.storage.delete('game:'+id);
-    let idx=[];
-    try{const ir=await window.storage.get('games-index');if(ir)idx=JSON.parse(ir.value);}catch(e){}
-    await window.storage.set('games-index',JSON.stringify(idx.filter(g=>g.id!==id)));
+    await fbDeleteGame(id);
     loadGamesList();toast('Game deleted');
   }catch(e){toast('Delete failed','#e07070');}
 }
