@@ -725,6 +725,22 @@ function showSaveModal(){
 }
 function closeSaveModal(){document.getElementById('save-modal').style.display='none';}
 
+function flattenState(s){
+  // Firestore doesn't support nested arrays — serialize lineups as JSON strings
+  const flat=JSON.parse(JSON.stringify(s));
+  ['away','home'].forEach(side=>{
+    flat.lineups[side]=flat.lineups[side].map(slotArr=>JSON.stringify(slotArr));
+  });
+  return flat;
+}
+function unflattenState(flat){
+  const s=JSON.parse(JSON.stringify(flat));
+  ['away','home'].forEach(side=>{
+    s.lineups[side]=s.lineups[side].map(slotStr=>typeof slotStr==='string'?JSON.parse(slotStr):slotStr);
+  });
+  return s;
+}
+
 async function saveGame(){
   const name=document.getElementById('save-name').value.trim();
   if(!name){document.getElementById('save-status').textContent='Enter a game name';return;}
@@ -732,8 +748,8 @@ async function saveGame(){
   const id=state.currentGameId||(Date.now().toString(36)+Math.random().toString(36).slice(2));
   state.currentGameId=id;
   try{
-    const clean=JSON.parse(JSON.stringify({...state,savedAt:Date.now(),name}));
-    await window._fbSaveGame(id,clean);
+    const flat=flattenState({...state,savedAt:Date.now(),name});
+    await window._fbSaveGame(id,flat);
     closeSaveModal();toast('Game saved!');
     document.getElementById('game-status').textContent=name;
   }catch(e){console.error(e);document.getElementById('save-status').textContent='Save failed — check console';}
@@ -758,7 +774,7 @@ async function loadGamesList(){
 
 async function loadGame(id){
   try{
-    const saved=await window._fbLoadGame(id);
+    const saved=unflattenState(await window._fbLoadGame(id));
     if(!saved)throw new Error();
     state={...saved};
     document.getElementById('away-name').value=state.teams.away.name;
