@@ -373,7 +373,7 @@ function mlbPosCode(abbr){
 
 async function fetchMLBTeams(){
   try{
-    const r=await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1&season=2025');
+    const r=await fetch('https://statsapi.mlb.com/api/v1/teams?sportId=1&season=2026');
     const d=await r.json();
     const teams=d.teams.sort((a,b)=>a.name.localeCompare(b.name));
     ['away','home'].forEach(side=>{
@@ -386,7 +386,7 @@ async function fetchMLBTeams(){
 async function fetchRoster(teamId){
   if(rosterCache[teamId])return rosterCache[teamId];
   try{
-    const r=await fetch(`https://statsapi.mlb.com/api/v1/teams/${teamId}/roster?rosterType=active&season=2025`);
+    const r=await fetch(`https://statsapi.mlb.com/api/v1/teams/${teamId}/roster?rosterType=active&season=2026`);
     const d=await r.json();
     const roster=(d.roster||[]).map(p=>({name:p.person.fullName,jersey:p.jerseyNumber||'',pos:mlbPosCode(p.position?.abbreviation||'')})).sort((a,b)=>a.name.localeCompare(b.name));
     rosterCache[teamId]=roster;return roster;
