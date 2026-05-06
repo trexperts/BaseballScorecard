@@ -323,7 +323,7 @@ select:focus{outline:none;border-color:#4a80b8}
 
 <div id="toast" class="toast"></div>
 
-<script type="module">
+<script>
 // --- FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -882,6 +882,40 @@ function showTab(t){
   if(t==='pitching')renderPitching();
   if(t==='games')loadGamesList();
 }
+
+// --- EXPOSE FUNCTIONS TO GLOBAL SCOPE (required for type="module") ---
+window.showTab=showTab;
+window.showSaveModal=showSaveModal;
+window.closeSaveModal=closeSaveModal;
+window.saveGame=saveGame;
+window.loadGame=loadGame;
+window.loadGamesList=loadGamesList;
+window.deleteGame=deleteGame;
+window.newGame=newGame;
+window.startGame=startGame;
+window.setViewTeam=setViewTeam;
+window.onTeamSelect=onTeamSelect;
+window.updateTeamName=updateTeamName;
+window.updateStarter=updateStarter;
+window.selectRosterPlayer=selectRosterPlayer;
+window.openModal=openModal;
+window.closeModal=closeModal;
+window.addPitch=addPitch;
+window.removePitch=removePitch;
+window.selectOutcome=selectOutcome;
+window.toggleFielder=toggleFielder;
+window.selectBase=selectBase;
+window.saveAtBat=saveAtBat;
+window.clearAtBat=clearAtBat;
+window.openSubModal=openSubModal;
+window.closeSubModal=closeSubModal;
+window.fillSubFromRoster=fillSubFromRoster;
+window.confirmSub=confirmSub;
+window.openPtchModal=openPtchModal;
+window.closePtchModal=closePtchModal;
+window.fillPtchFromRoster=fillPtchFromRoster;
+window.confirmPtchChange=confirmPtchChange;
+window.removePitcher=removePitcher;
 
 // Init
 fetchMLBTeams();
