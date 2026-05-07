@@ -535,7 +535,8 @@ function renderDiamond(d){
   const b1=['1st','2nd','3rd','Home'].includes(d.base);
   const b2=['2nd','3rd','Home'].includes(d.base);
   const b3=['3rd','Home'].includes(d.base);
-  return`<div class="diamond-wrap">${svgDiamond(b1,b2,b3,d.outcome==='HR')}</div><div class="ab-result">${d.outcome||''}${d.fielders&&d.fielders.length?'<br><span style="color:#5a6a80">'+d.fielders.join('-')+'</span>':''}</div><div class="ab-pitches">${d.pitches||''}</div>`;
+  const b4=d.base==='Home'||d.outcome==='HR'||d.run;
+  return`<div class="diamond-wrap">${svgDiamond(b1,b2,b3,b4)}</div><div class="ab-result">${d.outcome||''}${d.fielders&&d.fielders.length?'<br><span style="color:#5a6a80">'+d.fielders.join('-')+'</span>':''}</div><div class="ab-pitches">${d.pitches||''}</div>`;
 }
 function svgDiamond(b1,b2,b3,hr){
   return`<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
